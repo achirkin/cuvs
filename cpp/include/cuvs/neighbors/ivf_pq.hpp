@@ -27,6 +27,10 @@
 #include <raft/core/resources.hpp>
 #include <raft/util/integer_utils.hpp>
 
+#include <tuple>
+#include <variant>
+#include <vector>
+
 namespace cuvs::neighbors::ivf_pq {
 
 /**
@@ -427,6 +431,9 @@ struct index : cuvs::neighbors::index {
   raft::device_matrix_view<float, uint32_t, raft::row_major> rotation_matrix() noexcept;
   raft::device_matrix_view<const float, uint32_t, raft::row_major> rotation_matrix() const noexcept;
 
+  raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> rotation_matrix_int8(
+    const raft::resources& res) const;
+
   /**
    * Accumulated list sizes, sorted in descending order [n_lists + 1].
    * The last value contains the total length of the index.
@@ -446,6 +453,8 @@ struct index : cuvs::neighbors::index {
   /** Cluster centers corresponding to the lists in the original space [n_lists, dim_ext] */
   raft::device_matrix_view<float, uint32_t, raft::row_major> centers() noexcept;
   raft::device_matrix_view<const float, uint32_t, raft::row_major> centers() const noexcept;
+  raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> centers_int8(
+    const raft::resources& res) const;
 
   /** Cluster centers corresponding to the lists in the rotated space [n_lists, rot_dim] */
   raft::device_matrix_view<float, uint32_t, raft::row_major> centers_rot() noexcept;
@@ -482,8 +491,11 @@ struct index : cuvs::neighbors::index {
   raft::device_vector<uint32_t, uint32_t, raft::row_major> list_sizes_;
   raft::device_mdarray<float, pq_centers_extents, raft::row_major> pq_centers_;
   raft::device_matrix<float, uint32_t, raft::row_major> centers_;
+  mutable std::optional<raft::device_matrix<int8_t, uint32_t, raft::row_major>> centers_int8_;
   raft::device_matrix<float, uint32_t, raft::row_major> centers_rot_;
   raft::device_matrix<float, uint32_t, raft::row_major> rotation_matrix_;
+  mutable std::optional<raft::device_matrix<int8_t, uint32_t, raft::row_major>>
+    rotation_matrix_int8_;
 
   // Computed members for accelerating search.
   raft::device_vector<uint8_t*, uint32_t, raft::row_major> data_ptrs_;
