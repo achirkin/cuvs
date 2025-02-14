@@ -42,6 +42,7 @@
 #include <raft/linalg/normalize.cuh>
 #include <raft/linalg/unary_op.cuh>
 #include <raft/matrix/detail/select_warpsort.cuh>
+#include <raft/matrix/select_k.cuh>
 #include <raft/util/cache.hpp>
 #include <raft/util/cuda_utils.cuh>
 #include <raft/util/device_atomics.cuh>
@@ -215,7 +216,8 @@ void select_clusters_int8(raft::resources const& handle,
     handle, float_queries_view, [queries, dim, dim_ext, norm_factor] __device__(uint32_t ix) {
       uint32_t col = ix % dim_ext;
       uint32_t row = ix / dim_ext;
-      return col < dim ? utils::mapping<int8_t>{}(queries[col + dim * row]) : norm_factor;
+      return col < dim ? utils::mapping<int8_t>{}(queries[col + dim * row])
+                       : (col == dim ? norm_factor : 0);
     });
 
   using dist_type = int32_t;
@@ -243,7 +245,7 @@ void select_clusters_int8(raft::resources const& handle,
                      false,
                      n_lists,
                      n_queries,
-                     gemm_k,
+                     dim_ext,
                      &alpha,
                      cluster_centers,
                      dim_ext,
@@ -256,27 +258,27 @@ void select_clusters_int8(raft::resources const& handle,
 
   // Select neighbor clusters for each query.
   rmm::device_uvector<dist_type> cluster_dists(n_queries * n_probes, stream, mr);
-  // cuvs::selection::select_k(
-  //   handle,
-  //   raft::make_device_matrix_view<const dist_type, int64_t>(
-  //     qc_distances.data(), n_queries, n_lists),
-  //   std::nullopt,
-  //   raft::make_device_matrix_view<dist_type, int64_t>(cluster_dists.data(), n_queries, n_probes),
-  //   raft::make_device_matrix_view<uint32_t, int64_t>(clusters_to_probe, n_queries, n_probes),
-  //   true);
+  raft::matrix::select_k<dist_type, uint32_t>(
+    handle,
+    raft::make_device_matrix_view<const dist_type, int64_t>(
+      qc_distances.data(), n_queries, n_lists),
+    std::nullopt,
+    raft::make_device_matrix_view<dist_type, int64_t>(cluster_dists.data(), n_queries, n_probes),
+    raft::make_device_matrix_view<uint32_t, int64_t>(clusters_to_probe, n_queries, n_probes),
+    true);
 
-  raft::matrix::detail::select::warpsort::select_k_impl<
-    dist_type,
-    uint32_t,
-    raft::matrix::detail::select::warpsort::warp_sort_distributed_ext>(handle,
-                                                                       qc_distances.data(),
-                                                                       nullptr,
-                                                                       n_queries,
-                                                                       n_lists,
-                                                                       n_probes,
-                                                                       cluster_dists.data(),
-                                                                       clusters_to_probe,
-                                                                       true);
+  // raft::matrix::detail::select::warpsort::select_k_impl<
+  //   dist_type,
+  //   uint32_t,
+  //   raft::matrix::detail::select::warpsort::warp_sort_distributed_ext>(handle,
+  //                                                                      qc_distances.data(),
+  //                                                                      nullptr,
+  //                                                                      n_queries,
+  //                                                                      n_lists,
+  //                                                                      n_probes,
+  //                                                                      cluster_dists.data(),
+  //                                                                      clusters_to_probe,
+  //                                                                      true);
 }
 
 template <typename T>
@@ -793,7 +795,7 @@ inline auto get_max_batch_size(raft::resources const& res,
 }
 
 /** Maximum number of queries ivf_pq::search can process in one batch. */
-constexpr uint32_t kMaxQueries = 4096 * 4;
+constexpr uint32_t kMaxQueries = 4096 * 16;
 
 /** See raft::spatial::knn::ivf_pq::search docs */
 template <typename T,

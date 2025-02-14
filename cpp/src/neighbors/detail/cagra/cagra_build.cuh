@@ -164,7 +164,7 @@ void build_knn_graph(
   const auto num_queries = dataset.extent(0);
 
   // Use the same maximum batch size as the ivf_pq::search to avoid allocating more than needed.
-  constexpr uint32_t kMaxQueries = 4096;
+  constexpr uint32_t kMaxQueries = 4096 * 16;
 
   // Heuristic: the build_knn_graph code should use only a fraction of the workspace memory; the
   // rest should be used by the ivf_pq::search. Here we say that the workspace size should be a good

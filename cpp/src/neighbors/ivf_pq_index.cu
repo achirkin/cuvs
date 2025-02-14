@@ -350,7 +350,7 @@ raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> index<IdxT>::r
 {
   if (!rotation_matrix_int8_.has_value()) {
     rotation_matrix_int8_.emplace(
-      raft::make_device_matrix<int8_t, uint32_t>(res, this->rot_dim(), this->dim()));
+      raft::make_device_mdarray<int8_t, uint32_t>(res, rotation_matrix().extents()));
     raft::linalg::map(res,
                       rotation_matrix_int8_->view(),
                       cuvs::spatial::knn::detail::utils::mapping<int8_t>{},
@@ -366,8 +366,7 @@ raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> index<IdxT>::c
   if (!centers_int8_.has_value()) {
     // NB: this multiplies all float components by 128, including the squared distances;
     //     we need to take this into account during search
-    centers_int8_.emplace(
-      raft::make_device_matrix<int8_t, uint32_t>(res, this->n_lists(), this->dim_ext()));
+    centers_int8_.emplace(raft::make_device_mdarray<int8_t, uint32_t>(res, centers().extents()));
     raft::linalg::map(
       res, centers_int8_->view(), cuvs::spatial::knn::detail::utils::mapping<int8_t>{}, centers());
   }
