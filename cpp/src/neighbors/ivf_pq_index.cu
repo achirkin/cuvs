@@ -16,6 +16,8 @@
 
 #include <cuvs/neighbors/ivf_pq.hpp>
 
+#include "detail/ann_utils.cuh"
+
 #include <raft/core/operators.hpp>
 #include <raft/linalg/map.cuh>
 
@@ -349,13 +351,10 @@ raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> index<IdxT>::r
   if (!rotation_matrix_int8_.has_value()) {
     rotation_matrix_int8_.emplace(
       raft::make_device_matrix<int8_t, uint32_t>(res, this->rot_dim(), this->dim()));
-    raft::linalg::map(
-      res,
-      rotation_matrix_int8_->view(),
-      [] __device__(float x) {
-        return static_cast<int8_t>(std::clamp(x * 128.0f, -128.0f, 127.f));
-      },
-      rotation_matrix());
+    raft::linalg::map(res,
+                      rotation_matrix_int8_->view(),
+                      cuvs::spatial::knn::detail::utils::mapping<int8_t>{},
+                      rotation_matrix());
   }
   return rotation_matrix_int8_->view();
 }
@@ -365,19 +364,12 @@ raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> index<IdxT>::c
   const raft::resources& res) const
 {
   if (!centers_int8_.has_value()) {
-    uint32_t dim     = this->dim();
-    uint32_t dim_ext = this->dim_ext();
+    // NB: this multiplies all float components by 128, including the squared distances;
+    //     we need to take this into account during search
     centers_int8_.emplace(
-      raft::make_device_matrix<int8_t, uint32_t>(res, this->n_lists(), dim_ext));
-    raft::linalg::map_offset(
-      res,
-      centers_int8_->view(),
-      [dim, dim_ext] __device__(uint32_t ix, float x) {
-        uint32_t col = ix % dim_ext;
-        return col < dim ? static_cast<int8_t>(std::clamp(x * 128.0f, -128.0f, 127.f))
-                         : static_cast<int8_t>(std::clamp(x * 128.0f * 128.0f, -128.0f, 127.f));
-      },
-      centers());
+      raft::make_device_matrix<int8_t, uint32_t>(res, this->n_lists(), this->dim_ext()));
+    raft::linalg::map(
+      res, centers_int8_->view(), cuvs::spatial::knn::detail::utils::mapping<int8_t>{}, centers());
   }
   return centers_int8_->view();
 }
