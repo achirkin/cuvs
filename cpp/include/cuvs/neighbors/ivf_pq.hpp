@@ -27,6 +27,7 @@
 #include <raft/core/resources.hpp>
 #include <raft/util/integer_utils.hpp>
 
+#include <optional>
 #include <tuple>
 #include <variant>
 #include <vector>
@@ -433,6 +434,8 @@ struct index : cuvs::neighbors::index {
 
   raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> rotation_matrix_int8(
     const raft::resources& res) const;
+  raft::device_matrix_view<const half, uint32_t, raft::row_major> rotation_matrix_half(
+    const raft::resources& res) const;
 
   /**
    * Accumulated list sizes, sorted in descending order [n_lists + 1].
@@ -454,6 +457,8 @@ struct index : cuvs::neighbors::index {
   raft::device_matrix_view<float, uint32_t, raft::row_major> centers() noexcept;
   raft::device_matrix_view<const float, uint32_t, raft::row_major> centers() const noexcept;
   raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> centers_int8(
+    const raft::resources& res) const;
+  raft::device_matrix_view<const half, uint32_t, raft::row_major> centers_half(
     const raft::resources& res) const;
 
   /** Cluster centers corresponding to the lists in the rotated space [n_lists, rot_dim] */
@@ -492,10 +497,12 @@ struct index : cuvs::neighbors::index {
   raft::device_mdarray<float, pq_centers_extents, raft::row_major> pq_centers_;
   raft::device_matrix<float, uint32_t, raft::row_major> centers_;
   mutable std::optional<raft::device_matrix<int8_t, uint32_t, raft::row_major>> centers_int8_;
+  mutable std::optional<raft::device_matrix<half, uint32_t, raft::row_major>> centers_half_;
   raft::device_matrix<float, uint32_t, raft::row_major> centers_rot_;
   raft::device_matrix<float, uint32_t, raft::row_major> rotation_matrix_;
   mutable std::optional<raft::device_matrix<int8_t, uint32_t, raft::row_major>>
     rotation_matrix_int8_;
+  mutable std::optional<raft::device_matrix<half, uint32_t, raft::row_major>> rotation_matrix_half_;
 
   // Computed members for accelerating search.
   raft::device_vector<uint8_t*, uint32_t, raft::row_major> data_ptrs_;

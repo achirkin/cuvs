@@ -279,6 +279,92 @@ void select_clusters_int8(raft::resources const& handle,
   //                                                                      true);
 }
 
+template <typename T>
+void select_clusters_half(raft::resources const& handle,
+                          uint32_t* clusters_to_probe,  // [n_queries, n_probes]
+                          half* float_queries,          // [n_queries, dim_ext]
+                          uint32_t n_queries,
+                          uint32_t n_probes,
+                          uint32_t n_lists,
+                          uint32_t dim,
+                          uint32_t dim_ext,
+                          cuvs::distance::DistanceType metric,
+                          const T* queries,             // [n_queries, dim]
+                          const half* cluster_centers,  // [n_lists, dim_ext]
+                          rmm::mr::device_memory_resource* mr)
+{
+  raft::common::nvtx::range<cuvs::common::nvtx::domain::cuvs> fun_scope(
+    "ivf_pq::search::select_clusters(n_probes = %u, n_queries = %u, n_lists = %u, dim = %u)",
+    n_probes,
+    n_queries,
+    n_lists,
+    dim);
+  auto stream = raft::resource::get_cuda_stream(handle);
+  half norm_factor;
+  switch (metric) {
+    case cuvs::distance::DistanceType::L2SqrtExpanded:
+    case cuvs::distance::DistanceType::L2Expanded: norm_factor = 1.0 / -2.0; break;
+    case cuvs::distance::DistanceType::CosineExpanded:
+    case cuvs::distance::DistanceType::InnerProduct: norm_factor = 0; break;
+    default: RAFT_FAIL("Unsupported distance type %d.", int(metric));
+  }
+  auto float_queries_view =
+    raft::make_device_vector_view<half, uint32_t>(float_queries, dim_ext * n_queries);
+  raft::linalg::map_offset(
+    handle, float_queries_view, [queries, dim, dim_ext, norm_factor] __device__(uint32_t ix) {
+      uint32_t col = ix % dim_ext;
+      uint32_t row = ix / dim_ext;
+      return col < dim ? utils::mapping<half>{}(queries[col + dim * row]) : norm_factor;
+    });
+
+  using dist_type = half;
+  dist_type alpha;
+  dist_type beta;
+  uint32_t gemm_k = dim;
+  switch (metric) {
+    case cuvs::distance::DistanceType::L2SqrtExpanded:
+    case cuvs::distance::DistanceType::L2Expanded: {
+      alpha  = -2.0;
+      beta   = 0.0;
+      gemm_k = dim + 1;
+      RAFT_EXPECTS(gemm_k <= dim_ext, "unexpected gemm_k or dim_ext");
+    } break;
+    case cuvs::distance::DistanceType::CosineExpanded:
+    case cuvs::distance::DistanceType::InnerProduct: {
+      alpha = -1.0;
+      beta  = 0.0;
+    } break;
+    default: RAFT_FAIL("Unsupported distance type %d.", int(metric));
+  }
+  rmm::device_uvector<dist_type> qc_distances(n_queries * n_lists, stream, mr);
+  raft::linalg::gemm(handle,
+                     true,
+                     false,
+                     n_lists,
+                     n_queries,
+                     gemm_k,
+                     &alpha,
+                     cluster_centers,
+                     dim_ext,
+                     float_queries,
+                     dim_ext,
+                     &beta,
+                     qc_distances.data(),
+                     n_lists,
+                     stream);
+
+  // Select neighbor clusters for each query.
+  rmm::device_uvector<dist_type> cluster_dists(n_queries * n_probes, stream, mr);
+  cuvs::selection::select_k(
+    handle,
+    raft::make_device_matrix_view<const dist_type, int64_t>(
+      qc_distances.data(), n_queries, n_lists),
+    std::nullopt,
+    raft::make_device_matrix_view<dist_type, int64_t>(cluster_dists.data(), n_queries, n_probes),
+    raft::make_device_matrix_view<uint32_t, int64_t>(clusters_to_probe, n_queries, n_probes),
+    true);
+}
+
 /**
  * An approximation to the number of times each cluster appears in a batched sample.
  *
@@ -780,7 +866,7 @@ inline void search(raft::resources const& handle,
   const auto max_queries = std::min<uint32_t>(std::max<uint32_t>(n_queries, 1), kMaxQueries);
   auto max_batch_size    = get_max_batch_size(handle, k, n_probes, max_queries, max_samples);
 
-  rmm::device_uvector<int8_t> float_queries(max_queries * dim_ext, stream, mr);
+  rmm::device_uvector<half> float_queries(max_queries * dim_ext, stream, mr);
   rmm::device_uvector<float> rot_queries(max_queries * index.rot_dim(), stream, mr);
   rmm::device_uvector<uint32_t> clusters_to_probe(max_queries * n_probes, stream, mr);
 
@@ -793,7 +879,7 @@ inline void search(raft::resources const& handle,
     raft::common::nvtx::range<cuvs::common::nvtx::domain::cuvs> batch_scope(
       "ivf_pq::search-batch(queries: %u - %u)", offset_q, offset_q + queries_batch);
 
-    select_clusters_int8(handle,
+    select_clusters_half(handle,
                          clusters_to_probe.data(),
                          float_queries.data(),
                          queries_batch,
@@ -803,11 +889,11 @@ inline void search(raft::resources const& handle,
                          dim_ext,
                          index.metric(),
                          queries + static_cast<size_t>(dim) * offset_q,
-                         index.centers_int8(handle).data_handle(),
+                         index.centers_half(handle).data_handle(),
                          mr);
 
     // Rotate queries
-    float alpha = 1.0 / 128.0;
+    float alpha = 1.0;
     float beta  = 0.0;
     raft::linalg::gemm(handle,
                        true,
@@ -816,7 +902,7 @@ inline void search(raft::resources const& handle,
                        queries_batch,
                        dim,
                        &alpha,
-                       index.rotation_matrix_int8(handle).data_handle(),
+                       index.rotation_matrix_half(handle).data_handle(),
                        dim,
                        float_queries.data(),
                        dim_ext,

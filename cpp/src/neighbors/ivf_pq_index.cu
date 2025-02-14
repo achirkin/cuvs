@@ -15,6 +15,8 @@
  */
 
 #include <cuvs/neighbors/ivf_pq.hpp>
+
+#include <raft/core/operators.hpp>
 #include <raft/linalg/map.cuh>
 
 namespace cuvs::neighbors::ivf_pq {
@@ -378,6 +380,29 @@ raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> index<IdxT>::c
       centers());
   }
   return centers_int8_->view();
+}
+
+template <typename IdxT>
+raft::device_matrix_view<const half, uint32_t, raft::row_major> index<IdxT>::rotation_matrix_half(
+  const raft::resources& res) const
+{
+  if (!rotation_matrix_half_.has_value()) {
+    rotation_matrix_half_.emplace(
+      raft::make_device_mdarray<half, uint32_t>(res, rotation_matrix().extents()));
+    raft::linalg::map(res, rotation_matrix_half_->view(), raft::cast_op<half>{}, rotation_matrix());
+  }
+  return rotation_matrix_half_->view();
+}
+
+template <typename IdxT>
+raft::device_matrix_view<const half, uint32_t, raft::row_major> index<IdxT>::centers_half(
+  const raft::resources& res) const
+{
+  if (!centers_half_.has_value()) {
+    centers_half_.emplace(raft::make_device_mdarray<half, uint32_t>(res, centers().extents()));
+    raft::linalg::map(res, centers_half_->view(), raft::cast_op<half>{}, centers());
+  }
+  return centers_half_->view();
 }
 
 template struct index<int64_t>;
