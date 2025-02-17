@@ -255,6 +255,7 @@ void select_clusters_int8(raft::resources const& handle,
 
   // Select neighbor clusters for each query.
   rmm::device_uvector<dist_type> cluster_dists(n_queries * n_probes, stream, mr);
+  // cuvs::selection::select_k lacks uint32_t-as-a-value support at the moment
   raft::matrix::select_k<dist_type, uint32_t>(
     handle,
     raft::make_device_matrix_view<const dist_type, int64_t>(
@@ -263,19 +264,6 @@ void select_clusters_int8(raft::resources const& handle,
     raft::make_device_matrix_view<dist_type, int64_t>(cluster_dists.data(), n_queries, n_probes),
     raft::make_device_matrix_view<uint32_t, int64_t>(clusters_to_probe, n_queries, n_probes),
     true);
-
-  // raft::matrix::detail::select::warpsort::select_k_impl<
-  //   dist_type,
-  //   uint32_t,
-  //   raft::matrix::detail::select::warpsort::warp_sort_distributed_ext>(handle,
-  //                                                                      qc_distances.data(),
-  //                                                                      nullptr,
-  //                                                                      n_queries,
-  //                                                                      n_lists,
-  //                                                                      n_probes,
-  //                                                                      cluster_dists.data(),
-  //                                                                      clusters_to_probe,
-  //                                                                      true);
 }
 
 template <typename T>
