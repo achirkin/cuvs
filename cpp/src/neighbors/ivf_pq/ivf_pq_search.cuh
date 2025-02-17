@@ -132,19 +132,17 @@ void select_clusters(raft::resources const& handle,
     handle, float_queries_view, [queries, dim, dim_ext, norm_factor] __device__(uint32_t ix) {
       uint32_t col = ix % dim_ext;
       uint32_t row = ix / dim_ext;
-      return col < dim ? utils::mapping<float>{}(queries[col + dim * row]) : norm_factor;
+      if (col < dim) { return utils::mapping<float>{}(queries[col + dim * row]); }
+      return col == dim ? norm_factor : 0.0f;
     });
 
   float alpha;
   float beta;
-  uint32_t gemm_k = dim;
   switch (metric) {
     case cuvs::distance::DistanceType::L2SqrtExpanded:
     case cuvs::distance::DistanceType::L2Expanded: {
-      alpha  = -2.0;
-      beta   = 0.0;
-      gemm_k = dim + 1;
-      RAFT_EXPECTS(gemm_k <= dim_ext, "unexpected gemm_k or dim_ext");
+      alpha = -2.0;
+      beta  = 0.0;
     } break;
     case cuvs::distance::DistanceType::CosineExpanded:
     case cuvs::distance::DistanceType::InnerProduct: {
@@ -159,7 +157,7 @@ void select_clusters(raft::resources const& handle,
                      false,
                      n_lists,
                      n_queries,
-                     gemm_k,
+                     dim_ext,
                      &alpha,
                      cluster_centers,
                      dim_ext,
@@ -315,20 +313,18 @@ void select_clusters_half(raft::resources const& handle,
     handle, float_queries_view, [queries, dim, dim_ext, norm_factor] __device__(uint32_t ix) {
       uint32_t col = ix % dim_ext;
       uint32_t row = ix / dim_ext;
-      return col < dim ? utils::mapping<half>{}(queries[col + dim * row]) : norm_factor;
+      if (col < dim) { return utils::mapping<half>{}(queries[col + dim * row]); }
+      return col == dim ? norm_factor : half(0);
     });
 
   using dist_type = half;
   dist_type alpha;
   dist_type beta;
-  uint32_t gemm_k = dim;
   switch (metric) {
     case cuvs::distance::DistanceType::L2SqrtExpanded:
     case cuvs::distance::DistanceType::L2Expanded: {
-      alpha  = -2.0;
-      beta   = 0.0;
-      gemm_k = dim + 1;
-      RAFT_EXPECTS(gemm_k <= dim_ext, "unexpected gemm_k or dim_ext");
+      alpha = -2.0;
+      beta  = 0.0;
     } break;
     case cuvs::distance::DistanceType::CosineExpanded:
     case cuvs::distance::DistanceType::InnerProduct: {
@@ -343,7 +339,7 @@ void select_clusters_half(raft::resources const& handle,
                      false,
                      n_lists,
                      n_queries,
-                     gemm_k,
+                     dim_ext,
                      &alpha,
                      cluster_centers,
                      dim_ext,
