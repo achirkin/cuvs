@@ -20,6 +20,9 @@
 
 #include <raft/core/operators.hpp>
 #include <raft/linalg/map.cuh>
+#include <raft/linalg/reduce.cuh>
+
+#include <raft/util/cudart_utils.hpp>
 
 namespace cuvs::neighbors::ivf_pq {
 index_params index_params::from_dataset(raft::matrix_extent<int64_t> dataset,
@@ -367,8 +370,51 @@ raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> index<IdxT>::c
     // NB: this multiplies all float components by 128, including the squared distances;
     //     we need to take this into account during search
     centers_int8_.emplace(raft::make_device_mdarray<int8_t, uint32_t>(res, centers().extents()));
-    raft::linalg::map(
-      res, centers_int8_->view(), cuvs::spatial::knn::detail::utils::mapping<int8_t>{}, centers());
+    uint32_t dim_ext = this->dim_ext();
+    uint32_t dim     = this->dim();
+    auto* inputs     = centers().data_handle();
+
+    // centers_int8_factor_ =
+
+    auto max_val = raft::make_device_vector<float, uint32_t>(res, 1);
+    raft::linalg::reduce<float, float, uint32_t, raft::identity_op, raft::max_op>(
+      max_val.data_handle(),
+      inputs,
+      centers().extent(0) * centers().extent(1),
+      1,
+      1.0f / 128.0f,
+      true,
+      true,
+      raft::resource::get_cuda_stream(res),
+      false,
+      raft::identity_op{},
+      raft::max_op{});
+    float max_val_host;
+    raft::copy(&max_val_host, max_val.data_handle(), 1, raft::resource::get_cuda_stream(res));
+    raft::resource::sync_stream(res);
+    // using raft::RAFT_NAME;
+    RAFT_LOG_INFO("Max value in the centers array: %f", max_val_host);
+    // centers_int8_factor_ = static_cast<int8_t>(std::clamp(128.0 / max_val_host, -128.0f, 127.f));
+
+    raft::linalg::map_offset(
+      res, centers_int8_->view(), [dim, dim_ext, inputs] __device__(uint32_t ix) {
+        uint32_t col = ix % dim_ext;
+        if (col < dim) {
+          return static_cast<int8_t>(std::clamp(inputs[ix] * 128.0f, -128.0f, 127.f));
+        }
+        auto x = inputs[ix - col + dim];
+        auto m = dim_ext - dim;
+        auto c = 64.0f / static_cast<float>(std::max<uint32_t>(m - 1, 1));
+        auto y = std::clamp(x * c, -128.0f, 127.f);
+        auto z = std::clamp((y - std::round(y)) * 128.0f, -128.0f, 127.f);
+        if (m == 1 || col > dim) { return static_cast<int8_t>(std::round(y)); }
+        return static_cast<int8_t>(z);
+      });
+    // raft::print_vector("centers[0]: ", centers().data_handle(), dim_ext, std::cout);
+    // raft::print_vector("centers[1]: ", centers().data_handle() + dim_ext, dim_ext, std::cout);
+    // raft::print_vector("centers_int8[0]: ", centers_int8_->data_handle(), dim_ext, std::cout);
+    // raft::print_vector(
+    //   "centers_int8[1]: ", centers_int8_->data_handle() + dim_ext, dim_ext, std::cout);
   }
   return centers_int8_->view();
 }

@@ -205,7 +205,7 @@ void select_clusters_int8(raft::resources const& handle,
   int8_t norm_factor;
   switch (metric) {
     case cuvs::distance::DistanceType::L2SqrtExpanded:
-    case cuvs::distance::DistanceType::L2Expanded: norm_factor = -64; break;
+    case cuvs::distance::DistanceType::L2Expanded: norm_factor = -128; break;
     case cuvs::distance::DistanceType::CosineExpanded:
     case cuvs::distance::DistanceType::InnerProduct: norm_factor = 0; break;
     default: RAFT_FAIL("Unsupported distance type %d.", int(metric));
@@ -216,21 +216,20 @@ void select_clusters_int8(raft::resources const& handle,
     handle, float_queries_view, [queries, dim, dim_ext, norm_factor] __device__(uint32_t ix) {
       uint32_t col = ix % dim_ext;
       uint32_t row = ix / dim_ext;
-      return col < dim ? utils::mapping<int8_t>{}(queries[col + dim * row])
-                       : (col == dim ? norm_factor : 0);
+      if (col < dim) { return utils::mapping<int8_t>{}(queries[col + dim * row]); }
+      auto m = dim_ext - dim;
+      if (m == 1 || col > dim) { return norm_factor; }
+      return static_cast<int8_t>(1 - m);
     });
 
   using dist_type = int32_t;
   dist_type alpha;
   dist_type beta;
-  uint32_t gemm_k = dim;
   switch (metric) {
     case cuvs::distance::DistanceType::L2SqrtExpanded:
     case cuvs::distance::DistanceType::L2Expanded: {
-      alpha  = -2;
-      beta   = 0;
-      gemm_k = dim + 1;
-      RAFT_EXPECTS(gemm_k <= dim_ext, "unexpected gemm_k or dim_ext");
+      alpha = -2;
+      beta  = 0;
     } break;
     case cuvs::distance::DistanceType::CosineExpanded:
     case cuvs::distance::DistanceType::InnerProduct: {
