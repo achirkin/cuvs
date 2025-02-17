@@ -154,6 +154,21 @@ void parse_search_param(const nlohmann::json& conf,
     // set half as default
     param.pq_param.lut_dtype = CUDA_R_16F;
   }
+
+  if (conf.contains("sparse_search_dtype")) {
+    std::string type = conf.at("sparse_search_dtype");
+    if (type == "float") {
+      param.pq_param.sparse_search_dtype = CUDA_R_32F;
+    } else if (type == "half") {
+      param.pq_param.sparse_search_dtype = CUDA_R_16F;
+    } else if (type == "int8") {
+      param.pq_param.sparse_search_dtype = CUDA_R_8I;
+    } else {
+      throw std::runtime_error("sparse_search_dtype: '" + type +
+                               "', should be either 'float', 'half' or 'int8'");
+    }
+  }
+
   if (conf.contains("refine_ratio")) {
     param.refine_ratio = conf.at("refine_ratio");
     if (param.refine_ratio < 1.0f) { throw std::runtime_error("refine_ratio should be >= 1.0"); }

@@ -186,6 +186,8 @@ struct search_params : cuvs::neighbors::search_params {
    * performance if tweaked incorrectly.
    */
   double preferred_shmem_carveout = 1.0;
+  /** The data type to use as GEMM element type when searching the clusters to probe. */
+  cudaDataType_t sparse_search_dtype = CUDA_R_32F;
 };
 /**
  * @}
