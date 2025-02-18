@@ -851,8 +851,11 @@ inline void search(raft::resources const& handle,
 
   auto stream = raft::resource::get_cuda_stream(handle);
 
-  auto dim      = index.dim();
-  auto dim_ext  = index.dim_ext();
+  auto dim = index.dim();
+  // int8_t coarse search uses more padding than others.
+  auto dim_ext  = params.sparse_search_dtype == CUDA_R_8I
+                    ? get_centers<int8_t, IdxT>(handle, index).extent(1)
+                    : index.dim_ext();
   auto n_probes = std::min<uint32_t>(params.n_probes, index.n_lists());
 
   uint32_t max_samples = 0;

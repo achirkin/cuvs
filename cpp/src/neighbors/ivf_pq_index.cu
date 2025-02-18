@@ -367,24 +367,27 @@ raft::device_matrix_view<const int8_t, uint32_t, raft::row_major> index<IdxT>::c
   const raft::resources& res) const
 {
   if (!centers_int8_.has_value()) {
-    centers_int8_.emplace(raft::make_device_mdarray<int8_t, uint32_t>(res, centers().extents()));
-    uint32_t dim_ext = this->dim_ext();
-    uint32_t dim     = this->dim();
-    auto* inputs     = centers().data_handle();
+    uint32_t n_lists      = this->n_lists();
+    uint32_t dim          = this->dim();
+    uint32_t dim_ext      = this->dim_ext();
+    uint32_t dim_ext_int8 = raft::round_up_safe(dim + 2, 16u);
+    centers_int8_.emplace(raft::make_device_matrix<int8_t, uint32_t>(res, n_lists, dim_ext_int8));
+    auto* inputs = centers().data_handle();
 
     // NB: we use all available spare slots between dim and dim_ext to improve precision
     raft::linalg::map_offset(
-      res, centers_int8_->view(), [dim, dim_ext, inputs] __device__(uint32_t ix) {
-        uint32_t col = ix % dim_ext;
+      res, centers_int8_->view(), [dim, dim_ext, dim_ext_int8, inputs] __device__(uint32_t ix) {
+        uint32_t col = ix % dim_ext_int8;
+        uint32_t row = ix / dim_ext_int8;
         if (col < dim) {
-          return static_cast<int8_t>(std::clamp(inputs[ix] * 128.0f, -128.0f, 127.f));
+          return static_cast<int8_t>(
+            std::clamp(inputs[col + row * dim_ext] * 128.0f, -128.0f, 127.f));
         }
-        auto x = inputs[ix - col + dim];
-        auto m = dim_ext - dim;
-        auto c = 64.0f / static_cast<float>(std::max<uint32_t>(m - 1, 1));
+        auto x = inputs[row * dim_ext + dim];
+        auto c = 64.0f / static_cast<float>(dim_ext_int8 - dim - 1);
         auto y = std::clamp(x * c, -128.0f, 127.f);
         auto z = std::clamp((y - std::round(y)) * 128.0f, -128.0f, 127.f);
-        if (m == 1 || col > dim) { return static_cast<int8_t>(std::round(y)); }
+        if (col > dim) { return static_cast<int8_t>(std::round(y)); }
         return static_cast<int8_t>(z);
       });
   }
