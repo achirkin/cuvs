@@ -16,6 +16,7 @@
 
 #include "../core/nvtx.hpp"
 #include "detail/hnsw.hpp"
+#include "../core/nvtx.hpp"
 #include <cstdint>
 #include <cuvs/neighbors/hnsw.hpp>
 #include <sys/types.h>
