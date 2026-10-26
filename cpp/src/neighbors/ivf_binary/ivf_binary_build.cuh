@@ -253,7 +253,7 @@ inline auto build(raft::resources const& handle,
                                                      index_access::centers(idx).view());
   }
 
-  if (params.add_data_on_build) { extend(handle, dataset, std::nullopt, &idx); }
+  if (params.add_data_on_build) { detail::extend(handle, dataset, std::nullopt, &idx); }
   return idx;
 }
 
