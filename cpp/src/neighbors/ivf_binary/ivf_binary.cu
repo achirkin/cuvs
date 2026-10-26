@@ -102,18 +102,7 @@ void extend(raft::resources const& handle,
             std::optional<raft::device_vector_view<const int64_t, int64_t>> new_indices,
             index<int64_t>* index)
 {
-  RAFT_EXPECTS(index != nullptr, "index cannot be empty.");
-  RAFT_EXPECTS(new_vectors.dim() == index->dim(),
-               "The dimension of the vectors must equal the dimension of the index.");
-  if (new_indices.has_value()) {
-    RAFT_EXPECTS(new_vectors.n_rows() == new_indices->extent(0),
-                 "new_vectors and new_indices have different number of rows");
-  }
-  detail::extend(handle,
-                 index,
-                 new_vectors.data_const_view().data_handle(),
-                 new_indices.has_value() ? new_indices->data_handle() : nullptr,
-                 new_vectors.n_rows());
+  detail::extend(handle, new_vectors, new_indices, index);
 }
 
 void search(raft::resources const& handle,
