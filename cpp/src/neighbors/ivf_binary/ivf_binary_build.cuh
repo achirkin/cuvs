@@ -24,6 +24,7 @@
 #include <raft/linalg/map.cuh>
 #include <raft/stats/histogram.cuh>
 #include <raft/util/cudart_utils.hpp>
+#include <raft/util/integer_utils.hpp>
 
 #include <algorithm>
 #include <vector>
@@ -171,7 +172,7 @@ inline auto build(raft::resources const& handle,
   auto stream          = raft::resource::get_cuda_stream(handle);
   const int64_t n_rows = dataset.n_rows();
   const auto codes     = dataset.data_const_view();
-  const auto threshold = dataset.const_dictionary_view().threshold;
+  const auto manifest  = dataset.const_manifest_view();
   cuvs::common::nvtx::range<cuvs::common::nvtx::domain::cuvs> fun_scope(
     "ivf_binary::build(%zu, %u)", size_t(n_rows), dataset.dim());
 
@@ -183,9 +184,12 @@ inline auto build(raft::resources const& handle,
   const auto dim = idx.storage_dim();
   auto& lists    = index_access::lists(idx);
 
-  auto& quantizer     = index_access::quantizer(idx);
-  quantizer.threshold = raft::make_device_vector<float, int64_t>(handle, threshold.extent(0));
-  if (threshold.extent(0) > 0) { raft::copy(handle, quantizer.threshold.view(), threshold); }
+  // The index starts with the zero-threshold quantizer of the dataset dimension
+  if (const auto* threshold = std::get_if<1>(&manifest.threshold)) {
+    auto& quantizer_threshold = index_access::quantizer(idx).threshold.emplace<1>(
+      raft::make_device_vector<float, int64_t>(handle, threshold->extent(0)));
+    raft::copy(handle, quantizer_threshold.view(), *threshold);
+  }
 
   utils::memzero(
     lists.accum_sorted_sizes().data_handle(), lists.accum_sorted_sizes().size(), stream);
@@ -221,7 +225,7 @@ inline auto build(raft::resources const& handle,
       decoded_centers_view,
       raft::identity_op{});
 
-    cuvs::preprocessing::quantize::binary::quantizer<float> zero_threshold(handle);
+    cuvs::preprocessing::quantize::binary::quantizer<float> zero_threshold(idx.dim());
     cuvs::preprocessing::quantize::binary::transform(handle,
                                                      zero_threshold,
                                                      raft::make_const_mdspan(decoded_centers_view),
