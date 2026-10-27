@@ -75,7 +75,7 @@ class BinaryQuantizationTest : public ::testing::TestWithParam<BinaryQuantizatio
       }
       ASSERT_EQ(quantizer.dim(), static_cast<uint32_t>(cols_));
       // The zero threshold is implied by the dimension alone
-      ASSERT_EQ(std::holds_alternative<uint32_t>(quantizer.threshold),
+      ASSERT_EQ(std::holds_alternative<uint32_t>(quantizer.value),
                 params.threshold == cuvs::preprocessing::quantize::binary::bit_threshold::zero);
 
       cuvs::preprocessing::quantize::binary::transform(

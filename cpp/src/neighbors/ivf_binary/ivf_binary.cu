@@ -28,7 +28,7 @@ void serialize_impl(raft::resources const& handle, std::ostream& os, const index
   raft::serialize_scalar(handle, os, idx.adaptive_centers());
   raft::serialize_scalar(handle, os, idx.conservative_memory_allocation());
   // The zero threshold is implied by the dimension and has no stored thresholds
-  const auto* threshold = std::get_if<1>(&idx.quantizer().threshold);
+  const auto* threshold = std::get_if<1>(&idx.quantizer().value);
   raft::serialize_scalar(handle, os, int64_t{threshold != nullptr ? threshold->extent(0) : 0});
   if (threshold != nullptr) { cuvs::util::detail::serialize_mdspan(handle, os, threshold->view()); }
   cuvs::util::detail::serialize_mdspan(handle, os, idx.centers());
@@ -70,9 +70,10 @@ auto deserialize_impl(raft::resources const& handle, Input& input) -> index<int6
 
   // The index is created with the zero-threshold quantizer of the given dimension
   if (n_threshold > 0) {
-    auto& threshold = detail::index_access::quantizer(idx).threshold.emplace<1>(
-      raft::make_device_vector<float, int64_t>(handle, n_threshold));
-    cuvs::util::detail::deserialize_mdspan(handle, input, threshold.view());
+    auto thresholds = raft::make_device_vector<float, int64_t>(handle, n_threshold);
+    cuvs::util::detail::deserialize_mdspan(handle, input, thresholds.view());
+    detail::index_access::quantizer(idx) =
+      cuvs::preprocessing::quantize::binary::quantizer<float>(std::move(thresholds));
   }
   cuvs::util::detail::deserialize_mdspan(handle, input, detail::index_access::centers(idx).view());
   if (adaptive) {

@@ -73,16 +73,16 @@ struct quantizer_view {
                                               typename vector_type::view_type>;
 
   /** The thresholds [dim], or the dimension for the zero quantizer. */
-  std::variant<uint32_t, vector_view_type> threshold;
+  std::variant<uint32_t, vector_view_type> value;
 
   /** The zero quantizer of dimension zero. */
   quantizer_view() = default;
 
   /** The zero quantizer of the given dimension (number of bits). */
-  explicit quantizer_view(uint32_t dim) noexcept : threshold{dim} {}
+  explicit quantizer_view(uint32_t dim) noexcept : value{dim} {}
 
   /** The quantizer with the given thresholds; its dimension is the extent of the vector. */
-  explicit quantizer_view(vector_view_type thresholds) noexcept : threshold{thresholds} {}
+  explicit quantizer_view(vector_view_type thresholds) noexcept : value{thresholds} {}
 
   /** The number of dimensions (bits) of the quantized vectors. */
   [[nodiscard]] auto dim() const noexcept -> uint32_t
@@ -95,7 +95,7 @@ struct quantizer_view {
           return static_cast<uint32_t>(v.extent(0));
         }
       },
-      threshold);
+      value);
   }
 
   /** A mutable view decays to the read-only one, the way an mdspan does. */
@@ -112,7 +112,7 @@ struct quantizer_view {
           return quantizer_view<U, ContainerPolicy>{raft::make_const_mdspan(v)};
         }
       },
-      threshold);
+      value);
   }
 };
 
@@ -142,16 +142,16 @@ struct quantizer {
   using const_view_type = quantizer_view<const T, ContainerPolicy>;
 
   /** The thresholds [dim], or the dimension for the zero quantizer. */
-  std::variant<uint32_t, threshold_type> threshold;
+  std::variant<uint32_t, threshold_type> value;
 
   /** The zero quantizer of dimension zero. */
   quantizer() = default;
 
   /** The zero quantizer of the given dimension (number of bits). */
-  explicit quantizer(uint32_t dim) noexcept : threshold{dim} {}
+  explicit quantizer(uint32_t dim) noexcept : value{dim} {}
 
   /** The quantizer owning the given thresholds; its dimension is the extent of the vector. */
-  explicit quantizer(threshold_type&& thresholds) : threshold{std::move(thresholds)} {}
+  explicit quantizer(threshold_type&& thresholds) : value{std::move(thresholds)} {}
 
   /** The number of dimensions (bits) of the quantized vectors. */
   [[nodiscard]] auto dim() const noexcept -> uint32_t
@@ -164,7 +164,7 @@ struct quantizer {
           return static_cast<uint32_t>(v.extent(0));
         }
       },
-      threshold);
+      value);
   }
 
   /** A non-owning view of the quantizer. */
@@ -178,7 +178,7 @@ struct quantizer {
           return view_type{v.view()};
         }
       },
-      threshold);
+      value);
   }
 
   /** A read-only non-owning view of the quantizer. */
@@ -192,7 +192,7 @@ struct quantizer {
           return const_view_type{v.view()};
         }
       },
-      threshold);
+      value);
   }
 };
 

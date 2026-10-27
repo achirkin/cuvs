@@ -167,15 +167,14 @@ auto train(raft::resources const& res,
            raft::device_matrix_view<const T, int64_t> dataset)
   -> cuvs::preprocessing::quantize::binary::quantizer<T>
 {
+  using quantizer_t          = cuvs::preprocessing::quantize::binary::quantizer<T>;
   const size_t dataset_size  = dataset.extent(0);
   const uint32_t dataset_dim = dataset.extent(1);
-  cuvs::preprocessing::quantize::binary::quantizer<T> quantizer(dataset_dim);
   if (params.threshold == cuvs::preprocessing::quantize::binary::bit_threshold::zero) {
-    return quantizer;
+    return quantizer_t(dataset_dim);
   }
 
-  auto& threshold_vec =
-    quantizer.threshold.template emplace<1>(raft::make_device_vector<T, int64_t>(res, dataset_dim));
+  auto threshold_vec = raft::make_device_vector<T, int64_t>(res, dataset_dim);
   auto threshold_ptr = threshold_vec.data_handle();
 
   if (params.threshold == cuvs::preprocessing::quantize::binary::bit_threshold::mean) {
@@ -247,7 +246,7 @@ auto train(raft::resources const& res,
                         raft::resource::get_cuda_stream(res));
     }
   }
-  return quantizer;
+  return quantizer_t(std::move(threshold_vec));
 }
 
 template <typename T>
@@ -256,15 +255,14 @@ auto train(raft::resources const& res,
            raft::host_matrix_view<const T, int64_t> dataset)
   -> cuvs::preprocessing::quantize::binary::quantizer<T>
 {
+  using quantizer_t          = cuvs::preprocessing::quantize::binary::quantizer<T>;
   const uint32_t dataset_dim = dataset.extent(1);
   const size_t dataset_size  = dataset.extent(0);
-  cuvs::preprocessing::quantize::binary::quantizer<T> quantizer(dataset_dim);
   if (params.threshold == cuvs::preprocessing::quantize::binary::bit_threshold::zero) {
-    return quantizer;
+    return quantizer_t(dataset_dim);
   }
 
-  auto& device_threshold =
-    quantizer.threshold.template emplace<1>(raft::make_device_vector<T, int64_t>(res, dataset_dim));
+  auto device_threshold = raft::make_device_vector<T, int64_t>(res, dataset_dim);
 
   using compute_t = std::conditional_t<std::is_same_v<half, T>, float, T>;
   std::vector<compute_t> host_threshold_vec(dataset_dim);
@@ -339,7 +337,7 @@ auto train(raft::resources const& res,
     raft::linalg::map(
       res, device_threshold.view(), raft::cast_op<T>{}, raft::make_const_mdspan(casted_vec.view()));
   }
-  return quantizer;
+  return quantizer_t(std::move(device_threshold));
 }
 
 template <typename T, typename QuantI>
@@ -366,7 +364,7 @@ void transform(raft::resources const& res,
                dataset_size,
                out_dataset_size);
   const T* threshold_ptr = nullptr;
-  if (const auto* threshold = std::get_if<1>(&quantizer.threshold)) {
+  if (const auto* threshold = std::get_if<1>(&quantizer.value)) {
     threshold_ptr = threshold->data_handle();
   }
 
@@ -413,7 +411,7 @@ void transform(raft::resources const& res,
   auto threshold_vec       = raft::make_host_vector<compute_t, int64_t>(0);
   compute_t* threshold_ptr = nullptr;
 
-  if (const auto* device_threshold = std::get_if<1>(&quantizer.threshold)) {
+  if (const auto* device_threshold = std::get_if<1>(&quantizer.value)) {
     threshold_vec = raft::make_host_vector<compute_t, int64_t>(dataset_dim);
     threshold_ptr = threshold_vec.data_handle();
 

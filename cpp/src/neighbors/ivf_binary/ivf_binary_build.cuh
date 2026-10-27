@@ -206,10 +206,11 @@ inline auto build(raft::resources const& handle,
   auto& lists    = index_access::lists(idx);
 
   // The index starts with the zero-threshold quantizer of the dataset dimension
-  if (const auto* threshold = std::get_if<1>(&manifest.threshold)) {
-    auto& quantizer_threshold = index_access::quantizer(idx).threshold.emplace<1>(
-      raft::make_device_vector<float, int64_t>(handle, threshold->extent(0)));
-    raft::copy(handle, quantizer_threshold.view(), *threshold);
+  if (const auto* threshold = std::get_if<1>(&manifest.value)) {
+    auto thresholds = raft::make_device_vector<float, int64_t>(handle, threshold->extent(0));
+    raft::copy(handle, thresholds.view(), *threshold);
+    index_access::quantizer(idx) =
+      cuvs::preprocessing::quantize::binary::quantizer<float>(std::move(thresholds));
   }
 
   utils::memzero(

@@ -61,7 +61,7 @@ typename ContainerPolicy =
 raft::device_accessor<raft::device_container_policy<std::remove_const_t<T>>>>
 struct quantizer_view {
   using vector_type;
-  std::variant<uint32_t, vector_view_type> threshold;
+  std::variant<uint32_t, vector_view_type> value;
 };
 ```
 
@@ -70,7 +70,7 @@ struct quantizer_view {
 | Name | Type | Description |
 | --- | --- | --- |
 | `vector_type` | `using` | The owning vector of the thresholds, which defines the memory space of the view. |
-| `threshold` | `std::variant<uint32_t, vector_view_type>` | The thresholds [dim], or the dimension for the zero quantizer. |
+| `value` | `std::variant<uint32_t, vector_view_type>` | The thresholds [dim], or the dimension for the zero quantizer. |
 
 <a id="vector-type"></a>
 ### vector_type
@@ -102,7 +102,7 @@ quantizer_view() = default;
 The zero quantizer of the given dimension (number of bits).
 
 ```cpp
-explicit quantizer_view(uint32_t dim) noexcept : threshold;
+explicit quantizer_view(uint32_t dim) noexcept : value;
 ```
 
 **Parameters**
@@ -120,7 +120,7 @@ explicit quantizer_view(uint32_t dim) noexcept : threshold;
 The quantizer with the given thresholds; its dimension is the extent of the vector.
 
 ```cpp
-explicit quantizer_view(vector_view_type thresholds) noexcept : threshold;
+explicit quantizer_view(vector_view_type thresholds) noexcept : value;
 ```
 
 **Parameters**
@@ -179,7 +179,7 @@ The threshold is either the vector of per-dimension thresholds (whose extent is 
 template <typename T,
 typename ContainerPolicy = raft::device_accessor<raft::device_container_policy<T>>>
 struct quantizer {
-  std::variant<uint32_t, threshold_type> threshold;
+  std::variant<uint32_t, threshold_type> value;
 };
 ```
 
@@ -187,7 +187,7 @@ struct quantizer {
 
 | Name | Type | Description |
 | --- | --- | --- |
-| `threshold` | `std::variant<uint32_t, threshold_type>` | The thresholds [dim], or the dimension for the zero quantizer. |
+| `value` | `std::variant<uint32_t, threshold_type>` | The thresholds [dim], or the dimension for the zero quantizer. |
 
 <a id="preprocessing-quantize-binary-quantizer-quantizer"></a>
 ### preprocessing::quantize::binary::quantizer::quantizer
@@ -207,7 +207,7 @@ quantizer() = default;
 The zero quantizer of the given dimension (number of bits).
 
 ```cpp
-explicit quantizer(uint32_t dim) noexcept : threshold;
+explicit quantizer(uint32_t dim) noexcept : value;
 ```
 
 **Parameters**

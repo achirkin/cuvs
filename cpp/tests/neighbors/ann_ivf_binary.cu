@@ -362,7 +362,7 @@ TEST(IvfBinary, ExtendAcceptsDifferentThresholds)
             (std::vector<uint32_t>{2, 1, 0, 0, 1, 1, 1, 1}));
   // Extending does not replace the quantizer metadata captured at build time.
   ASSERT_EQ(idx.quantizer().dim(), 8);
-  EXPECT_EQ(to_host(handle, std::get<1>(idx.quantizer().threshold).data_handle(), 8),
+  EXPECT_EQ(to_host(handle, std::get<1>(idx.quantizer().value).data_handle(), 8),
             std::vector<float>(8, 0.0f));
 
   auto ids       = raft::make_device_matrix<int64_t, int64_t>(handle, 1, 3);
@@ -461,7 +461,7 @@ TEST(IvfBinary, OwningDatasetViews)
   device_binary_dataset_view<float, int64_t> view = dataset.view();
   ASSERT_EQ(view.n_rows(), n_rows);
   ASSERT_EQ(view.dim(), dim);
-  ASSERT_TRUE(std::holds_alternative<uint32_t>(view.const_manifest_view().threshold));
+  ASSERT_TRUE(std::holds_alternative<uint32_t>(view.const_manifest_view().value));
 
   auto idx = build(handle, small_params(4), const_dataset.view());
   ASSERT_EQ(idx.dim(), dim);
@@ -474,7 +474,7 @@ TEST(IvfBinary, OwningDatasetViews)
   ASSERT_EQ(with_threshold.dim(), dim);
   auto idx_with_threshold = build(handle, small_params(4), with_threshold.view());
   ASSERT_EQ(idx_with_threshold.dim(), dim);
-  ASSERT_NE(std::get_if<1>(&idx_with_threshold.quantizer().threshold), nullptr);
+  ASSERT_NE(std::get_if<1>(&idx_with_threshold.quantizer().value), nullptr);
 }
 
 // The views have the constness semantics of an mdspan
