@@ -142,7 +142,7 @@ struct dataset_view {
    *
    * @return The number of rows.
    */
-  [[nodiscard]] auto n_rows() const noexcept -> index_type
+  [[nodiscard]] constexpr auto n_rows() const noexcept -> index_type
   {
     return spec_type::get_n_rows(data_view_);
   }
@@ -153,7 +153,7 @@ struct dataset_view {
    *
    * @return The dimension.
    */
-  [[nodiscard]] auto dim() const noexcept -> uint32_t
+  [[nodiscard]] constexpr auto dim() const noexcept -> uint32_t
   {
     return spec_type::get_dim(data_view_, manifest_view_);
   }
@@ -163,7 +163,7 @@ struct dataset_view {
    *
    * @return A view of the data.
    */
-  [[nodiscard]] auto data_view() const noexcept -> data_view_type { return data_view_; }
+  [[nodiscard]] constexpr auto data_view() const noexcept -> data_view_type { return data_view_; }
   /**
    * @brief A read-only view of the data.
    *
@@ -172,7 +172,7 @@ struct dataset_view {
    *
    * @return A read-only view of the data.
    */
-  [[nodiscard]] auto data_const_view() const noexcept -> const_data_view_type
+  [[nodiscard]] constexpr auto data_const_view() const noexcept -> const_data_view_type
   {
     if constexpr (is_const_view) {
       return data_view_;
@@ -186,7 +186,7 @@ struct dataset_view {
    *
    * @return A view of the manifest.
    */
-  [[nodiscard]] auto manifest_view() const noexcept -> manifest_view_type
+  [[nodiscard]] constexpr auto manifest_view() const noexcept -> manifest_view_type
     requires(is_compound)
   {
     return manifest_view_;
@@ -196,7 +196,7 @@ struct dataset_view {
    *
    * @return A read-only view of the manifest.
    */
-  [[nodiscard]] auto const_manifest_view() const noexcept -> const_manifest_view_type
+  [[nodiscard]] constexpr auto const_manifest_view() const noexcept -> const_manifest_view_type
     requires(is_compound)
   {
     if constexpr (is_const_view) {

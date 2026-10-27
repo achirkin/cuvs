@@ -636,3 +636,119 @@ std::optional&lt;raft::host_matrix_view&lt;uint32_t, int64_t, raft::row_major&gt
 **Returns**
 
 [`cuvs::neighbors::nn_descent::index<uint32_t>`](/api-reference/cpp-api-neighbors-nn-descent#neighbors-nn-descent-index)
+
+**Additional overload:** `neighbors::nn_descent::build`
+
+Build an NN-Descent index from a pair of device-resident BBQ dataset views.
+
+```cpp
+auto build(raft::resources const& res,
+index_params const& params,
+cuvs::neighbors::device_bbq_dataset_view<float, int64_t> dataset,
+cuvs::neighbors::device_bbq_dataset_view<float, int64_t> dataset_query,
+std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph =
+std::nullopt) -> cuvs::neighbors::nn_descent::index<uint32_t>;
+```
+
+The document and query views encode the same rows with two (possibly different) code layouts, and the graph is built with asymmetric compressed-code distances. Supported layout pairs (document x query): packed_1b x packed_4b, packed_1b x transposed_2b, packed_1b x transposed_4b, transposed_2b x transposed_4b. Passing the same layout for both is equivalent to the single-view overload.
+
+**Parameters**
+
+| Name | Direction | Type | Description |
+| --- | --- | --- | --- |
+| `res` |  | `raft::resources const&` | raft resources |
+| `params` |  | [`index_params const&`](/api-reference/cpp-api-neighbors-nn-descent#neighbors-nn-descent-index-params) | NN-Descent build parameters |
+| `dataset` |  | `cuvs::neighbors::device_bbq_dataset_view<float, int64_t>` | BBQ document-side codes and correction terms in device memory |
+| `dataset_query` |  | `cuvs::neighbors::device_bbq_dataset_view<float, int64_t>` | BBQ query-side codes and correction terms in device memory |
+| `graph` |  | `std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>>` | optional caller-owned host graph<br />Default: `std::nullopt`. |
+
+**Returns**
+
+[`cuvs::neighbors::nn_descent::index<uint32_t>`](/api-reference/cpp-api-neighbors-nn-descent#neighbors-nn-descent-index)
+
+**Additional overload:** `neighbors::nn_descent::build`
+
+cuvs::neighbors::device_bbq_dataset_view&lt;float, int64_t&gt; dataset,
+
+```cpp
+auto build(raft::resources const& res,
+index_params const& params,
+cuvs::neighbors::device_bbq_dataset_view<half, int64_t> dataset,
+cuvs::neighbors::device_bbq_dataset_view<half, int64_t> dataset_query,
+std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph =
+std::nullopt) -> cuvs::neighbors::nn_descent::index<uint32_t>;
+```
+
+cuvs::neighbors::device_bbq_dataset_view&lt;float, int64_t&gt; dataset_query, std::optional&lt;raft::host_matrix_view&lt;uint32_t, int64_t, raft::row_major&gt;&gt; graph = std::nullopt) -&gt; cuvs::neighbors::nn_descent::index&lt;uint32_t&gt;
+
+**Parameters**
+
+| Name | Direction | Type | Description |
+| --- | --- | --- | --- |
+| `res` |  | `raft::resources const&` |  |
+| `params` |  | [`index_params const&`](/api-reference/cpp-api-neighbors-nn-descent#neighbors-nn-descent-index-params) |  |
+| `dataset` |  | `cuvs::neighbors::device_bbq_dataset_view<half, int64_t>` |  |
+| `dataset_query` |  | `cuvs::neighbors::device_bbq_dataset_view<half, int64_t>` |  |
+| `graph` |  | `std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>>` | Default: `std::nullopt`. |
+
+**Returns**
+
+[`cuvs::neighbors::nn_descent::index<uint32_t>`](/api-reference/cpp-api-neighbors-nn-descent#neighbors-nn-descent-index)
+
+**Additional overload:** `neighbors::nn_descent::build`
+
+cuvs::neighbors::device_bbq_dataset_view&lt;float, int64_t&gt; dataset,
+
+```cpp
+auto build(raft::resources const& res,
+index_params const& params,
+cuvs::neighbors::device_bbq_dataset_view<int8_t, int64_t> dataset,
+cuvs::neighbors::device_bbq_dataset_view<int8_t, int64_t> dataset_query,
+std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph =
+std::nullopt) -> cuvs::neighbors::nn_descent::index<uint32_t>;
+```
+
+cuvs::neighbors::device_bbq_dataset_view&lt;float, int64_t&gt; dataset_query, std::optional&lt;raft::host_matrix_view&lt;uint32_t, int64_t, raft::row_major&gt;&gt; graph = std::nullopt) -&gt; cuvs::neighbors::nn_descent::index&lt;uint32_t&gt;
+
+**Parameters**
+
+| Name | Direction | Type | Description |
+| --- | --- | --- | --- |
+| `res` |  | `raft::resources const&` |  |
+| `params` |  | [`index_params const&`](/api-reference/cpp-api-neighbors-nn-descent#neighbors-nn-descent-index-params) |  |
+| `dataset` |  | `cuvs::neighbors::device_bbq_dataset_view<int8_t, int64_t>` |  |
+| `dataset_query` |  | `cuvs::neighbors::device_bbq_dataset_view<int8_t, int64_t>` |  |
+| `graph` |  | `std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>>` | Default: `std::nullopt`. |
+
+**Returns**
+
+[`cuvs::neighbors::nn_descent::index<uint32_t>`](/api-reference/cpp-api-neighbors-nn-descent#neighbors-nn-descent-index)
+
+**Additional overload:** `neighbors::nn_descent::build`
+
+cuvs::neighbors::device_bbq_dataset_view&lt;float, int64_t&gt; dataset,
+
+```cpp
+auto build(raft::resources const& res,
+index_params const& params,
+cuvs::neighbors::device_bbq_dataset_view<uint8_t, int64_t> dataset,
+cuvs::neighbors::device_bbq_dataset_view<uint8_t, int64_t> dataset_query,
+std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph =
+std::nullopt) -> cuvs::neighbors::nn_descent::index<uint32_t>;
+```
+
+cuvs::neighbors::device_bbq_dataset_view&lt;float, int64_t&gt; dataset_query, std::optional&lt;raft::host_matrix_view&lt;uint32_t, int64_t, raft::row_major&gt;&gt; graph = std::nullopt) -&gt; cuvs::neighbors::nn_descent::index&lt;uint32_t&gt;
+
+**Parameters**
+
+| Name | Direction | Type | Description |
+| --- | --- | --- | --- |
+| `res` |  | `raft::resources const&` |  |
+| `params` |  | [`index_params const&`](/api-reference/cpp-api-neighbors-nn-descent#neighbors-nn-descent-index-params) |  |
+| `dataset` |  | `cuvs::neighbors::device_bbq_dataset_view<uint8_t, int64_t>` |  |
+| `dataset_query` |  | `cuvs::neighbors::device_bbq_dataset_view<uint8_t, int64_t>` |  |
+| `graph` |  | `std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>>` | Default: `std::nullopt`. |
+
+**Returns**
+
+[`cuvs::neighbors::nn_descent::index<uint32_t>`](/api-reference/cpp-api-neighbors-nn-descent#neighbors-nn-descent-index)

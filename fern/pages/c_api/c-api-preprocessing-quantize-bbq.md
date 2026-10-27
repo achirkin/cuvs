@@ -90,9 +90,9 @@ Tensors are not copied and must remain valid while a derived dataset is in use.
 | --- | --- | --- | --- |
 | `codes` | in | `DLManagedTensor*` | uint8 device matrix containing encoded rows |
 | `lower_intervals` | in | `DLManagedTensor*` | float32 device vector with one lower interval per row |
-| `upper_intervals` | in | `DLManagedTensor*` | float32 device vector with one upper interval per row |
+| `upper_intervals` | in | `DLManagedTensor*` | float32 device vector with one upper interval per row (validated, but not used by the distance kernels) |
 | `additional_corrections` | in | `DLManagedTensor*` | float32 device vector with one correction per row |
-| `quantized_component_sums` | in | `DLManagedTensor*` | int32 device vector with one component sum per row |
+| `quantized_component_sums` | in | `DLManagedTensor*` | int32 device vector with one component sum per row (validated, but not used by the distance kernels) |
 | `centroid` | in | `DLManagedTensor*` | device vector containing the dataset centroid |
 | `dequant_delta` | in | `DLManagedTensor*` | float32 device vector with one dequantization delta per row |
 | `dequant_sum_delta` | in | `DLManagedTensor*` | float32 device vector with one delta-times-sum value per row |

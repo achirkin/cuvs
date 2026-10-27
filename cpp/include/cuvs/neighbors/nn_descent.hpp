@@ -579,6 +579,68 @@ auto build(raft::resources const& res,
            std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph =
              std::nullopt) -> cuvs::neighbors::nn_descent::index<uint32_t>;
 
+/**
+ * @brief Build an NN-Descent index from a pair of device-resident BBQ dataset views.
+ *
+ * The document and query views encode the same rows with two (possibly different) code layouts,
+ * and the graph is built with asymmetric compressed-code distances. Supported layout pairs
+ * (document x query): packed_1b x packed_4b, packed_1b x transposed_2b, packed_1b x transposed_4b,
+ * transposed_2b x transposed_4b. Passing the same layout for both is equivalent to the
+ * single-view overload.
+ *
+ * @param res raft resources
+ * @param params NN-Descent build parameters
+ * @param dataset BBQ document-side codes and correction terms in device memory
+ * @param dataset_query BBQ query-side codes and correction terms in device memory
+ * @param graph optional caller-owned host graph
+ * @return index containing the all-neighbors graph
+ */
+auto build(raft::resources const& res,
+           index_params const& params,
+           cuvs::neighbors::device_bbq_dataset_view<float, int64_t> dataset,
+           cuvs::neighbors::device_bbq_dataset_view<float, int64_t> dataset_query,
+           std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph =
+             std::nullopt) -> cuvs::neighbors::nn_descent::index<uint32_t>;
+/**
+ * @copydoc build(raft::resources const& res, index_params const& params,
+ * cuvs::neighbors::device_bbq_dataset_view<float, int64_t> dataset,
+ * cuvs::neighbors::device_bbq_dataset_view<float, int64_t> dataset_query,
+ * std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph = std::nullopt)
+ * -> cuvs::neighbors::nn_descent::index<uint32_t>
+ */
+auto build(raft::resources const& res,
+           index_params const& params,
+           cuvs::neighbors::device_bbq_dataset_view<half, int64_t> dataset,
+           cuvs::neighbors::device_bbq_dataset_view<half, int64_t> dataset_query,
+           std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph =
+             std::nullopt) -> cuvs::neighbors::nn_descent::index<uint32_t>;
+/**
+ * @copydoc build(raft::resources const& res, index_params const& params,
+ * cuvs::neighbors::device_bbq_dataset_view<float, int64_t> dataset,
+ * cuvs::neighbors::device_bbq_dataset_view<float, int64_t> dataset_query,
+ * std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph = std::nullopt)
+ * -> cuvs::neighbors::nn_descent::index<uint32_t>
+ */
+auto build(raft::resources const& res,
+           index_params const& params,
+           cuvs::neighbors::device_bbq_dataset_view<int8_t, int64_t> dataset,
+           cuvs::neighbors::device_bbq_dataset_view<int8_t, int64_t> dataset_query,
+           std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph =
+             std::nullopt) -> cuvs::neighbors::nn_descent::index<uint32_t>;
+/**
+ * @copydoc build(raft::resources const& res, index_params const& params,
+ * cuvs::neighbors::device_bbq_dataset_view<float, int64_t> dataset,
+ * cuvs::neighbors::device_bbq_dataset_view<float, int64_t> dataset_query,
+ * std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph = std::nullopt)
+ * -> cuvs::neighbors::nn_descent::index<uint32_t>
+ */
+auto build(raft::resources const& res,
+           index_params const& params,
+           cuvs::neighbors::device_bbq_dataset_view<uint8_t, int64_t> dataset,
+           cuvs::neighbors::device_bbq_dataset_view<uint8_t, int64_t> dataset_query,
+           std::optional<raft::host_matrix_view<uint32_t, int64_t, raft::row_major>> graph =
+             std::nullopt) -> cuvs::neighbors::nn_descent::index<uint32_t>;
+
 /** @} */
 /**
  * @brief Test if we have enough GPU memory to run NN descent algorithm.
