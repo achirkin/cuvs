@@ -3004,6 +3004,8 @@ void build(raft::resources const& res,
                "InnerProduct.");
   RAFT_EXPECTS(idx.metric() == front_manifest.metric,
                "BBQ dataset metric does not match the NN-Descent metric.");
+  RAFT_EXPECTS(dataset_query.const_manifest_view().metric == front_manifest.metric,
+               "BBQ query dataset metric does not match the document dataset metric.");
   // packed_4b is the only layout dispatched to local_join_kernel_bbq_wmma, and the int4 MMA that
   // kernel is built around only exists from sm_75 on.
   if (front_manifest.layout == bbq_code_layout::packed_4b ||

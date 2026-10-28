@@ -124,26 +124,20 @@ The bytes one encoded row occupies.
 
 `uint32_t`
 
-<a id="preprocessing-quantize-bbq-quantizer-view-requires"></a>
-### preprocessing::quantize::bbq::quantizer_view::requires
+<a id="preprocessing-quantize-bbq-quantizer-view-quantizer-view-u"></a>
+### preprocessing::quantize::bbq::quantizer_view::quantizer_view&lt;U&gt;
 
 A mutable view decays to the read-only one, the way an mdspan does.
 
 ```cpp
 template <typename U>
-requires(!std::is_const_v<T> && std::is_same_v<U, const T>)
-operator quantizer_view<U>() const noexcept  // NOLINT(google-explicit-constructor);
+operator quantizer_view<U>() const noexcept  // NOLINT(google-explicit-constructor)
+requires(!std::is_const_v<T> && std::is_same_v<U, const T>);
 ```
-
-**Parameters**
-
-| Name | Direction | Type | Description |
-| --- | --- | --- | --- |
-| `arg1` |  | `!std::is_const_v<T> && std::is_same_v<U, const T>` |  |
 
 **Returns**
 
-`void`
+`operator`
 
 <a id="preprocessing-quantize-bbq-quantizer"></a>
 ### preprocessing::quantize::bbq::quantizer

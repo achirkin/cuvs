@@ -123,8 +123,8 @@ struct quantizer_view {
 
   /** A mutable view decays to the read-only one, the way an mdspan does. */
   template <typename U>
-    requires(!std::is_const_v<T> && std::is_same_v<U, const T>)
   operator quantizer_view<U>() const noexcept  // NOLINT(google-explicit-constructor)
+    requires(!std::is_const_v<T> && std::is_same_v<U, const T>)
   {
     return quantizer_view<U>{raft::make_const_mdspan(centroid), layout, metric, centroid_norm_sq};
   }
