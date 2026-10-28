@@ -83,11 +83,9 @@ typedef cuvsBbqQuantizer* cuvsBbqQuantizer_t;
  *
  * @param[in] codes uint8 device matrix containing encoded rows
  * @param[in] lower_intervals float32 device vector with one lower interval per row
- * @param[in] upper_intervals float32 device vector with one upper interval per row (validated,
- *            but not used by the distance kernels)
+ * @param[in] upper_intervals float32 device vector with one upper interval per row
  * @param[in] additional_corrections float32 device vector with one correction per row
  * @param[in] quantized_component_sums int32 device vector with one component sum per row
- *            (validated, but not used by the distance kernels)
  * @param[in] centroid device vector containing the dataset centroid
  * @param[in] dequant_delta float32 device vector with one dequantization delta per row
  * @param[in] dequant_sum_delta float32 device vector with one delta-times-sum value per row
