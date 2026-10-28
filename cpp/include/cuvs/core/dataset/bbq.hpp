@@ -52,7 +52,7 @@ struct bbq_data {
   [[nodiscard]] auto const_view() const noexcept
   {
     return bbq_data<decltype(as_const_view(codes.rows)), decltype(as_const_view(codes.scale))>{
-      codes.const_view(),
+      as_const_view(codes),
       as_const_view(lower_intervals),
       as_const_view(dequant_sum_delta),
       as_const_view(row_norm)};
@@ -77,8 +77,7 @@ struct bbq_spec {
 
     using data_type =
       bbq_data<raft::device_matrix<code_type, int64_t>, raft::device_vector<math_type, int64_t>>;
-    using data_view_type       = decltype(std::declval<data_type&>().view());
-    using const_data_view_type = decltype(std::declval<const data_type&>().const_view());
+    using data_view_type = decltype(std::declval<data_type&>().view());
 
     using manifest_type            = preprocessing::quantize::bbq::quantizer<value_type>;
     using manifest_view_type       = preprocessing::quantize::bbq::quantizer_view<value_type>;
@@ -88,29 +87,10 @@ struct bbq_spec {
     {
       return d.view();
     }
-    [[nodiscard]] static auto get_data_const_view(const data_type& d) noexcept
-      -> const_data_view_type
-    {
-      return d.const_view();
-    }
-    [[nodiscard]] static auto get_data_const_view(data_view_type d) noexcept -> const_data_view_type
-    {
-      return d.const_view();
-    }
 
     [[nodiscard]] static auto get_manifest_view(manifest_type& m) noexcept -> manifest_view_type
     {
       return m.view();
-    }
-    [[nodiscard]] static auto get_manifest_const_view(const manifest_type& m) noexcept
-      -> const_manifest_view_type
-    {
-      return m.view();
-    }
-    [[nodiscard]] static auto get_manifest_const_view(manifest_view_type m) noexcept
-      -> const_manifest_view_type
-    {
-      return m;
     }
 
     [[nodiscard]] static constexpr auto get_n_rows(const auto& d) noexcept -> index_type

@@ -20,19 +20,6 @@
 namespace CUVS_EXPORT cuvs {
 
 /**
- * A read-only view of an array or of a view, whichever it is given.
- */
-template <typename ArrayOrSpanT>
-[[nodiscard]] auto as_const_view(const ArrayOrSpanT& x) noexcept
-{
-  if constexpr (requires { x.view(); }) {
-    return x.view();
-  } else {
-    return raft::make_const_mdspan(x);
-  }
-}
-
-/**
  * Rows with a per-row `scale` and a per-row `shift`: the building block of the data of affine
  * datasets. The rows are the values themselves for a plain affine dataset, and an encoding of the
  * values for a quantized one (BBQ has one such group, RaBitQ has two); the `scale` and the `shift`
@@ -95,22 +82,12 @@ struct affine_spec {
 
     static constexpr bool is_device_accessible = RowsPolicy::is_device_accessible;
 
-    using data_type            = affine_data<rows_type, vector_type>;
-    using data_view_type       = decltype(std::declval<data_type&>().view());
-    using const_data_view_type = decltype(std::declval<const data_type&>().const_view());
+    using data_type      = affine_data<rows_type, vector_type>;
+    using data_view_type = decltype(std::declval<data_type&>().view());
 
     [[nodiscard]] static auto get_data_view(data_type& d) noexcept -> data_view_type
     {
       return d.view();
-    }
-    [[nodiscard]] static auto get_data_const_view(const data_type& d) noexcept
-      -> const_data_view_type
-    {
-      return d.const_view();
-    }
-    [[nodiscard]] static auto get_data_const_view(data_view_type d) noexcept -> const_data_view_type
-    {
-      return d.const_view();
     }
 
     // NOTE: the shape accessors take the data in either form - the storage an owning dataset holds,
