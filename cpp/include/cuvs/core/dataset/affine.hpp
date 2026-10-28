@@ -80,8 +80,8 @@ struct affine_spec {
 
   template <typename T, typename IdxT>
   struct apply {
-    using value_type = std::remove_cv_t<T>;
-    using index_type = std::remove_cv_t<IdxT>;
+    using value_type = std::remove_const_t<T>;
+    using index_type = std::remove_const_t<IdxT>;
 
     using rows_type = raft::
       mdarray<value_type, raft::matrix_extent<int64_t>, raft::layout_c_contiguous, RowsPolicy>;

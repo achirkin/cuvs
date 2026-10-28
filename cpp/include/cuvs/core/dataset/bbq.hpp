@@ -68,8 +68,8 @@ struct bbq_data {
 struct bbq_spec {
   template <typename T, typename IdxT>
   struct apply {
-    using value_type = std::remove_cv_t<T>;
-    using index_type = std::remove_cv_t<IdxT>;
+    using value_type = std::remove_const_t<T>;
+    using index_type = std::remove_const_t<IdxT>;
     using code_type  = uint8_t;
     using math_type  = float;
 
